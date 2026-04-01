@@ -78,7 +78,7 @@
 - 问题分类（严重 / 一般 / 优化）
 - 缺失测试点
 - 改进建议
-- 可选优化示例
+- 自动修复后的 improved_cases（可直接执行）
 
 ---
 
@@ -207,6 +207,10 @@ existing_cases = [
 points = TestPointIdentifier.identify("登录模块需求描述", feature="登录模块")
 print(TestCaseReviewer.review_with_test_points(existing_cases, points["test_points"]))
 ```
+
+`review_with_test_points` 会返回结构化结果，其中 `improved_cases` 会自动包含：
+- 针对缺失测试点补齐的建议用例
+- 对不可执行（缺 steps/expected_result）用例的修复版本
 
 ---
 

@@ -108,6 +108,28 @@ class FrontendScenarioTests(unittest.TestCase):
         self.assertIn("test_cases", payload)
         self.assertIn("review", payload)
 
+    def test_review_returns_executable_improved_cases(self):
+        cases = [
+            {
+                "id": "TC-BAD-001",
+                "feature": "登录",
+                "title": "缺少步骤和预期",
+                "preconditions": ["用户存在"],
+                "steps": [],
+                "test_data": {},
+                "expected_result": [],
+                "priority": "P1",
+                "case_type": "normal",
+            }
+        ]
+        points = TestPointIdentifier.identify("登录页面支持验证码登录并返回错误提示", feature="登录")
+        report = TestCaseReviewer.review_with_test_points(cases, points["test_points"])
+        self.assertIn("improved_cases", report)
+        self.assertGreater(len(report["improved_cases"]), 0)
+        self.assertTrue(
+            all(item.get("steps") and item.get("expected_result") for item in report["improved_cases"])
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
