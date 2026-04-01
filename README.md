@@ -1,9 +1,10 @@
 # cece-agent
 
-`cece-agent` 是基于 **HKUDS/nanobot** 扩展的“测试专家能力包”，专注：
+`cece-agent` 是基于 **HKUDS/nanobot** 扩展的“测试专家 agent”，专注：
 
-1. 测试用例设计（Test Case Generation）
-2. 测试用例评审（Test Case Review）
+1. 测试点识别（Test Point Identification）
+2. 测试用例设计（Test Case Generation）
+3. 测试用例评审（Test Case Review）
 
 > 设计原则：不重造 agent 框架，仅通过 nanobot 原生机制（skill + prompt + workflow + memory）扩展。
 
@@ -31,7 +32,7 @@
 
 ---
 
-## 2. cece-agent 设计方案
+## 2. cece-agent 设计方案（本地可运行）
 
 ### 2.1 推荐实现方式
 - 用 `skills/cece_agent/SKILL.md` 约束行为和输出结构。
@@ -42,8 +43,13 @@
 
 ### 2.2 能力定义
 
-#### A. 用例生成
+#### A. 测试点识别
+输入：PRD / 用户故事 / 接口文档 / 功能描述。  
+输出：结构化测试点（JSON）。
+
+#### B. 用例生成
 输入：PRD / 用户故事 / 接口文档 / 功能描述。
+流程：需求 → 测试点识别 → 测试用例生成。  
 输出：结构化 JSON，用例字段：
 - id
 - feature
@@ -64,8 +70,9 @@
 - permission（如适用）
 - frontend 页面场景（如适用）：渲染、交互反馈、导航跳转、兼容性
 
-#### B. 用例 Review
+#### C. 用例 Review
 输入：已有测试用例（JSON 或表格）。
+流程：需求 → 测试点识别 → 用例评审。  
 输出：
 - 总体评价
 - 问题分类（严重 / 一般 / 优化）
@@ -78,10 +85,14 @@
 ## 3. 目录结构
 
 ```text
+cece_agent/
+  __main__.py
+  run.py
 skills/
   cece_agent/
     SKILL.md
     prompts.py
+    test_point_identifier.py
     test_case_generator.py
     test_case_reviewer.py
 ```
@@ -90,10 +101,11 @@ skills/
 
 ## 4. Prompt 模板
 
-已实现三类模板：
+已实现四类模板：
 1. `SYSTEM_PROMPT`（测试专家 persona + 质量标准）
-2. `GENERATION_PROMPT`（生成结构与强制覆盖项）
-3. `REVIEW_PROMPT`（评审结构与必查清单）
+2. `TEST_POINT_PROMPT`（测试点识别）
+3. `GENERATION_PROMPT`（生成结构与强制覆盖项）
+4. `REVIEW_PROMPT`（评审结构与必查清单）
 
 见：`skills/cece_agent/prompts.py`。
 
@@ -101,18 +113,55 @@ skills/
 
 ## 5. 使用示例
 
-### 5.1 输入需求 → 输出测试用例
+## 5. 如何本地运行（不依赖 chat apps）
+
+### 5.1 测试点识别
+
+```bash
+python -m cece_agent.run \
+  --mode identify \
+  --feature "登录模块" \
+  --input "登录页面支持手机号验证码登录，错误 5 次锁定 10 分钟，点击登录后跳转首页" \
+  --pretty
+```
+
+### 5.2 需求 -> 测试点 -> 测试用例
+
+```bash
+python -m cece_agent.run \
+  --mode generate \
+  --feature "登录模块" \
+  --input "登录页面支持手机号验证码登录，错误 5 次锁定 10 分钟，点击登录后跳转首页" \
+  --pretty
+```
+
+### 5.3 pipeline（识别 + 生成 + review）
+
+```bash
+python -m cece_agent.run \
+  --mode pipeline \
+  --feature "登录模块" \
+  --input "登录页面支持手机号验证码登录，错误 5 次锁定 10 分钟，点击登录后跳转首页" \
+  --pretty
+```
+
+---
+
+## 6. Python API 使用示例
+
+### 6.1 输入需求 → 输出测试用例
 
 ```python
 from skills.cece_agent.test_case_generator import TestCaseGenerator
+from skills.cece_agent.test_point_identifier import TestPointIdentifier
 
 feature = """
 用户可以通过手机号+验证码登录。验证码 60 秒有效，错误 5 次锁定 10 分钟。
 未注册手机号不可登录，管理员账号不可使用手机号登录。
 """
 
-prompt = TestCaseGenerator.build_prompt(feature)
-print(prompt)  # 交给 LLM
+points = TestPointIdentifier.identify(feature, feature="登录")
+print(points)
 
 cases = [
     {
@@ -128,16 +177,18 @@ cases = [
     }
 ]
 
+cases = TestCaseGenerator.generate_from_test_points("登录", points["test_points"])
 issues = TestCaseGenerator.validate_cases(cases)
 print(issues)
 enriched = TestCaseGenerator.enrich_frontend_scenarios(feature, cases)
 print(TestCaseGenerator.to_json(enriched))
 ```
 
-### 5.2 输入测试用例 → 输出 review
+### 6.2 输入测试用例 → 输出 review
 
 ```python
 from skills.cece_agent.test_case_reviewer import TestCaseReviewer
+from skills.cece_agent.test_point_identifier import TestPointIdentifier
 
 existing_cases = [
     {
@@ -153,14 +204,13 @@ existing_cases = [
     }
 ]
 
-prompt = TestCaseReviewer.build_prompt(test_cases=str(existing_cases), feature_context="登录模块")
-print(prompt)  # 交给 LLM
-print(TestCaseReviewer.quick_diagnostics(existing_cases))
+points = TestPointIdentifier.identify("登录模块需求描述", feature="登录模块")
+print(TestCaseReviewer.review_with_test_points(existing_cases, points["test_points"]))
 ```
 
 ---
 
-## 6. 与 nanobot 集成建议
+## 7. 与 nanobot 集成建议
 
 1. 将 `skills/cece_agent` 放入 nanobot 的 skill 搜索路径。
 2. 在 agent 配置中启用该 skill（可 always_on 或按需激活）。

@@ -75,3 +75,31 @@ class TestCaseReviewer:
             "moderate": moderate,
             "suggestions": suggestions,
         }
+
+    @classmethod
+    def review_with_test_points(
+        cls, cases: list[dict[str, Any]], test_points: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Review cases with test-point traceability as the baseline."""
+        diagnostics = cls.quick_diagnostics(cases)
+        case_titles = " ".join(str(c.get("title", "")) for c in cases).lower()
+        missing_points: list[str] = []
+        for point in test_points:
+            category = str(point.get("category", "")).strip().lower()
+            if category and category not in case_titles:
+                missing_points.append(category)
+
+        critical = diagnostics["severe"]
+        normal = diagnostics["moderate"]
+        suggestions = diagnostics["suggestions"]
+        if missing_points:
+            normal.append("未覆盖测试点: " + ", ".join(sorted(set(missing_points))))
+
+        return {
+            "summary": "用例评审完成，已基于测试点进行覆盖检查。",
+            "critical_issues": critical,
+            "normal_issues": normal,
+            "suggestions": suggestions,
+            "missing_test_points": sorted(set(missing_points)),
+            "improved_cases": [],
+        }

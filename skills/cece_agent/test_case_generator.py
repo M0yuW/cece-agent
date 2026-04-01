@@ -169,3 +169,43 @@ class TestCaseGenerator:
     @classmethod
     def to_json(cls, cases: list[dict[str, Any]], indent: int = 2) -> str:
         return json.dumps(cls.normalize(cases), ensure_ascii=False, indent=indent)
+
+    @classmethod
+    def generate_from_test_points(
+        cls, feature: str, test_points: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Generate minimal runnable test cases from identified test points."""
+        generated: list[dict[str, Any]] = []
+        for idx, point in enumerate(test_points, start=1):
+            category = str(point.get("category", "functional")).lower()
+            generated.append(
+                {
+                    "id": f"TC-{idx:03d}",
+                    "feature": feature,
+                    "title": f"{feature} - {category} 场景验证",
+                    "preconditions": ["系统服务可用", "测试账号准备完成"],
+                    "steps": [f"执行 {category} 相关操作", "观察系统行为与反馈"],
+                    "test_data": {"category": category},
+                    "expected_result": [str(point.get("description", "行为符合预期"))],
+                    "priority": "P0" if point.get("risk_level") == "high" else "P1",
+                    "case_type": cls._map_case_type(category),
+                }
+            )
+        return cls.normalize(generated)
+
+    @staticmethod
+    def _map_case_type(category: str) -> str:
+        mapping = {
+            "functional": "normal",
+            "validation": "edge",
+            "boundary": "edge",
+            "error": "error",
+            "state": "normal",
+            "permission": "error",
+            "api": "api",
+            "ui": "ui",
+            "idempotency": "api",
+            "data_consistency": "api",
+            "error_code": "error",
+        }
+        return mapping.get(category, "normal")

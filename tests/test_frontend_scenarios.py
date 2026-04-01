@@ -1,7 +1,9 @@
 import json
+import subprocess
 import unittest
 
 from skills.cece_agent.test_case_generator import TestCaseGenerator
+from skills.cece_agent.test_point_identifier import TestPointIdentifier
 from skills.cece_agent.test_case_reviewer import TestCaseReviewer
 
 
@@ -75,6 +77,36 @@ class FrontendScenarioTests(unittest.TestCase):
         text = TestCaseGenerator.to_json(payload)
         parsed = json.loads(text)
         self.assertEqual(parsed[0]["id"], "TC-001")
+
+    def test_identifier_includes_ui_for_frontend_text(self):
+        points = TestPointIdentifier.identify(
+            "登录页面有按钮、输入框和跳转，接口返回错误码", feature="登录"
+        )
+        categories = {p["category"] for p in points["test_points"]}
+        self.assertIn("ui", categories)
+        self.assertIn("error_code", categories)
+
+    def test_pipeline_cli_runs(self):
+        result = subprocess.run(
+            [
+                "python",
+                "-m",
+                "cece_agent.run",
+                "--mode",
+                "pipeline",
+                "--feature",
+                "登录",
+                "--input",
+                "登录页面支持验证码登录，失败返回错误提示，点击后跳转首页",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertIn("test_points", payload)
+        self.assertIn("test_cases", payload)
+        self.assertIn("review", payload)
 
 
 if __name__ == "__main__":

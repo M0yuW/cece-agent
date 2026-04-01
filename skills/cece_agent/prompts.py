@@ -106,3 +106,43 @@ REVIEW_PROMPT = dedent(
     - 若需求不完整，明确说明评审置信度
     """
 ).strip()
+
+
+TEST_POINT_PROMPT = dedent(
+    """
+    任务：基于输入需求识别结构化测试点（JSON 输出）。
+
+    输入：
+    - feature_context: PRD / 用户故事 / 接口文档 / 前端需求描述
+
+    输出格式（必须为 JSON 对象）：
+    {
+      "feature": "string",
+      "test_points": [
+        {
+          "category": "functional|validation|boundary|error|state|permission|api|ui|data_consistency|idempotency|error_code",
+          "description": "string",
+          "risk_level": "high|medium|low"
+        }
+      ]
+    }
+
+    必须覆盖的测试点维度：
+    1. 功能测试点（functional）
+    2. 输入/参数校验（validation）
+    3. 边界值（boundary）
+    4. 异常场景（error）
+    5. 状态流转（state）
+    6. 权限/角色差异（permission）
+    7. 接口行为（api，若适用）
+    8. 前端交互（ui，若适用）
+    9. 数据一致性（data_consistency，若适用）
+    10. 幂等性（idempotency，接口类场景）
+    11. 错误码/错误提示（error_code）
+
+    要求：
+    - 每个测试点描述必须可落地执行
+    - 风险等级要有依据（高影响/高概率优先 high）
+    - 不要返回空泛建议
+    """
+).strip()
