@@ -1,0 +1,37 @@
+{
+  "sample_name": "bad_cases_review",
+  "feature": "结算模块",
+  "requirement": "用户提交订单后进入结算页，支持优惠券和支付方式选择。支付失败需返回明确错误提示。",
+  "bad_cases": [
+    {
+      "id": "TC-001",
+      "feature": "结算模块",
+      "title": "支付成功",
+      "preconditions": ["用户已登录"],
+      "steps": [],
+      "test_data": {},
+      "expected_result": [],
+      "priority": "P3",
+      "case_type": "normal"
+    },
+    {
+      "id": "TC-002",
+      "feature": "结算模块",
+      "title": "支付成功",
+      "preconditions": ["用户已登录"],
+      "steps": ["点击支付"],
+      "test_data": {},
+      "expected_result": ["成功"],
+      "priority": "P3",
+      "case_type": "normal"
+    }
+  ],
+  "seed_problems": [
+    "漏边界",
+    "漏异常",
+    "步骤不清晰",
+    "预期不明确",
+    "冗余重复",
+    "优先级不合理"
+  ]
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "sample_name": "login_general",
+    "feature": "登录模块",
+    "requirement": "用户可通过手机号+验证码登录。验证码6位，60秒有效，错误5次锁定10分钟。未注册手机号不可登录。",
+    "expected_dimensions": ["functional", "validation", "boundary", "error", "state", "permission", "error_code"],
+    "must_cover_points": ["functional", "boundary", "error", "validation"],
+    "required_fields": ["id", "feature", "title", "preconditions", "steps", "test_data", "expected_result", "priority", "case_type"]
+  },
+  {
+    "sample_name": "login_frontend",
+    "feature": "登录前端页面",
+    "requirement": "前端登录页包含手机号输入框、验证码输入框、获取验证码按钮和登录按钮。提交后显示loading，失败显示错误提示，成功跳转首页，防止重复提交。",
+    "expected_dimensions": ["functional", "validation", "boundary", "error", "state", "permission", "ui", "error_code"],
+    "must_cover_points": ["ui", "functional", "error", "validation"],
+    "required_fields": ["id", "feature", "title", "preconditions", "steps", "test_data", "expected_result", "priority", "case_type"]
+  },
+  {
+    "sample_name": "order_api",
+    "feature": "订单创建接口",
+    "requirement": "POST /api/orders 创建订单接口，需校验参数完整性。重复请求需保证幂等，不可重复扣库存。返回标准错误码和错误信息。",
+    "expected_dimensions": ["functional", "validation", "boundary", "error", "state", "permission", "api", "idempotency", "error_code", "data_consistency"],
+    "must_cover_points": ["api", "idempotency", "error", "validation"],
+    "required_fields": ["id", "feature", "title", "preconditions", "steps", "test_data", "expected_result", "priority", "case_type"]
+  }
+]
