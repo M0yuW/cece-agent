@@ -108,6 +108,33 @@ class FrontendScenarioTests(unittest.TestCase):
         self.assertIn("test_cases", payload)
         self.assertIn("review", payload)
 
+
+    def test_review_matches_category_with_case_type_not_title(self):
+        cases = [
+            {
+                "id": "TC-API-001",
+                "feature": "创建订单",
+                "title": "创建订单成功",
+                "preconditions": ["服务可用"],
+                "steps": ["调用创建订单接口"],
+                "test_data": {"user_id": 1, "item_id": 2},
+                "expected_result": ["返回 200 和订单号"],
+                "priority": "P0",
+                "case_type": "api",
+            }
+        ]
+        points = [
+            {
+                "category": "api",
+                "description": "接口参数/返回结构与状态码校验",
+                "risk_level": "high",
+            }
+        ]
+
+        report = TestCaseReviewer.review_with_test_points(cases, points)
+        self.assertNotIn("api", report["missing_test_points"])
+        self.assertFalse(any(item.get("id", "").startswith("IMP-MISS") for item in report["improved_cases"]))
+
     def test_review_returns_executable_improved_cases(self):
         cases = [
             {

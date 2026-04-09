@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+import json
 
 from .prompts import REVIEW_PROMPT, SYSTEM_PROMPT
 
@@ -82,11 +83,12 @@ class TestCaseReviewer:
     ) -> dict[str, Any]:
         """Review cases with test-point traceability as the baseline."""
         diagnostics = cls.quick_diagnostics(cases)
-        case_titles = " ".join(str(c.get("title", "")) for c in cases).lower()
         missing_points: list[str] = []
         for point in test_points:
             category = str(point.get("category", "")).strip().lower()
-            if category and category not in case_titles:
+            if not category:
+                continue
+            if not any(cls._point_covered_by_case(point, case) for case in cases):
                 missing_points.append(category)
 
         critical = diagnostics["severe"]
@@ -105,6 +107,44 @@ class TestCaseReviewer:
             "missing_test_points": sorted(set(missing_points)),
             "improved_cases": improved_cases,
         }
+
+    @classmethod
+    def _point_covered_by_case(
+        cls, point: dict[str, Any], case: dict[str, Any]
+    ) -> bool:
+        """Determine whether one case covers a test point by structured fields."""
+        category = str(point.get("category", "")).strip().lower()
+        if not category:
+            return True
+
+        case_type = str(case.get("case_type", "")).strip().lower()
+        expected_case_type = cls._map_case_type(category)
+        if case_type and case_type == expected_case_type:
+            return True
+
+        # Fallback: match key terms in structured fields instead of title only.
+        search_blob = cls._build_case_search_blob(case)
+        if category in search_blob:
+            return True
+
+        description = str(point.get("description", "")).strip().lower()
+        for token in [t for t in description.split() if len(t) >= 2]:
+            if token in search_blob:
+                return True
+
+        return False
+
+    @staticmethod
+    def _build_case_search_blob(case: dict[str, Any]) -> str:
+        fields = [
+            case.get("title", ""),
+            case.get("feature", ""),
+            case.get("case_type", ""),
+            " ".join(str(step) for step in case.get("steps", []) or []),
+            " ".join(str(item) for item in case.get("expected_result", []) or []),
+            json.dumps(case.get("test_data", {}), ensure_ascii=False),
+        ]
+        return " ".join(str(v) for v in fields if v).lower()
 
     @classmethod
     def _build_improved_cases(
